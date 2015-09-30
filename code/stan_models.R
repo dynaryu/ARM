@@ -4,29 +4,31 @@
 model_linreg = "
 data {
   int<lower=0> N;
-  /*vector<lower=0>[Ndata] mom_iq; // 
-  vector<lower=0, upper=1>[Ndata] mom_hs; // binary
-  vector<lower=0>[Ndata] kid_score; //
+  /*vector<lower=0>[N] mom_iq; // 
+  vector<lower=0, upper=1>[N] mom_hs; // binary
+  vector<lower=0>[N] kid_score; //
   */
-  real<lower=0> mom_iq[Ndata]; // 
-  int<lower=0, upper=1> mom_hs[Ndata]; // binary
-  real<lower=0> kid_score[Ndata]; //
+  real<lower=0> mom_iq[N]; // 
+  int<lower=0, upper=1> mom_hs[N]; // binary
+  real<lower=0> kid_score[N]; //
+}
+transformed data {           // interaction
+  real<lower=0> inter[N]; 
+  for (n in 1:N)
+    inter[n] <- mom_hs[n] * mom_iq[n];
+  //print(inter)
 }
 parameters {
-  real b0; // parameter of linear predictor
-  real b1; // 
-  real b2; // 
-  real b3; // 
-  real<lower=0> s; // sigma lognormal constant cov
+  vector[4] beta;
+  real<lower=0> sigma;
 }
 model {
-  b0 ~ cauchy(0, 2.5);
-  b1 ~ cauchy(0, 2.5); 
-  b2 ~ cauchy(0, 2.5); 
-  b3 ~ cauchy(0, 2.5); 
-  s ~ cauchy(0, 2.5); // half cauchy
-  for (n in 1:Ndata)
-    kid_score[n] ~ normal(b0 + b1*mom_hs[n] + b2*mom_iq[n] + b3*mom_hs[n]*mom_iq[n], s);
+  beta ~ cauchy(0, 2.5);
+  sigma ~ cauchy(0, 2.5); // half cauchy
+  
+  for (n in 1:N)
+    kid_score[n] ~ normal(beta[1] + beta[2]*mom_hs[n] + beta[3]*mom_iq[n] + 
+      beta[4]*inter[n], sigma);
 }
 "
 
@@ -41,6 +43,7 @@ data {
 transformed data {           // interaction
   vector[N] inter;
   inter <- mom_hs .* mom_iq;
+  print(inter)
 }
 parameters {
   vector[4] beta;

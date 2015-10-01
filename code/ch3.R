@@ -3,7 +3,7 @@
 library(foreign)
 library(rstan)
 
-mcmc_sampling <- function(stanDso, dataList, nChais=4, burnInSteps=1000, 
+mcmc_sampling <- function(stanDso, dataList, nChains=4, burnInSteps=1000, 
   addSteps=5000){
 
   #nChains = 4

@@ -1,39 +1,71 @@
 # stan models for ARM
 
-# ch2
-model_linreg = "
+# excercise 
+model_ch3ex = "
 data {
   int<lower=0> N;
-  /*vector<lower=0>[N] mom_iq; // 
+  vector<lower=0>[N] mom_iq; // 
   vector<lower=0, upper=1>[N] mom_hs; // binary
   vector<lower=0>[N] kid_score; //
-  */
+  /*
   real<lower=0> mom_iq[N]; // 
   int<lower=0, upper=1> mom_hs[N]; // binary
   real<lower=0> kid_score[N]; //
+  */
 }
 transformed data {           // interaction
-  real<lower=0> inter[N]; 
-  for (n in 1:N)
-    inter[n] <- mom_hs[n] * mom_iq[n];
-  //print(inter)
+  vector[N] inter;
+  inter <- mom_hs .* mom_iq;
 }
 parameters {
   vector[4] beta;
   real<lower=0> sigma;
 }
 model {
-  beta ~ cauchy(0, 2.5);
+  /*beta ~ cauchy(0, 2.5);
   sigma ~ cauchy(0, 2.5); // half cauchy
-  
-  for (n in 1:N)
+  */  
+  /*for (n in 1:N)
     kid_score[n] ~ normal(beta[1] + beta[2]*mom_hs[n] + beta[3]*mom_iq[n] + 
-      beta[4]*inter[n], sigma);
+      beta[4]*mom_hs[n]*mom_iq[n], sigma);
+  */
+  kid_score ~ normal(beta[1] + beta[2]*mom_hs + beta[3]*mom_iq + 
+      beta[4]*inter, sigma);
+}
+"
+
+model_ch3ex_z = "
+data {
+  int<lower=0> N;
+  vector<lower=0>[N] mom_iq; // 
+  vector<lower=0, upper=1>[N] mom_hs; // binary
+  vector<lower=0>[N] kid_score; //
+}
+transformed data { //standarisation
+  vector[N] z_mom_iq;
+  vector[N] z_mom_hs;
+  vector[N] z_inter;
+  print(mean(mom_iq))
+  print(sd(mom_iq))
+  z_mom_iq <- (mom_iq - mean(mom_iq))/(2*sd(mom_iq));
+  z_mom_hs <- (mom_hs - mean(mom_hs))/(2*sd(mom_hs));
+  z_inter <- z_mom_hs .* z_mom_iq;
+}
+parameters {
+  vector[4] beta;
+  real<lower=0> sigma;
+}
+model {
+  /*beta ~ cauchy(0, 2.5);
+  sigma ~ cauchy(0, 2.5); // half cauchy
+  */  
+  kid_score ~ normal(beta[1] + beta[2]*z_mom_hs + beta[3]*z_mom_iq + 
+      beta[4]*z_inter, sigma);
 }
 "
 
 # https://github.com/stan-dev/example-models/blob/master/ARM/Ch.3/kidiq_interaction.stan
-model_ch2  = "
+model_ch3  = "
 data {
   int<lower=0> N;
   vector[N] kid_score;
@@ -43,7 +75,6 @@ data {
 transformed data {           // interaction
   vector[N] inter;
   inter <- mom_hs .* mom_iq;
-  print(inter)
 }
 parameters {
   vector[4] beta;

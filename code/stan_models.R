@@ -86,6 +86,117 @@ model {
 }
 "
 
+model_ch5ex = "
+data {
+  int<lower=0> N;
+  vector<lower=0>[N] income; // 
+  /* vector<lower=0, upper=1>[N] vote; // binary
+  bernoulli_logit (int - vector)
+  */
+  int<lower=0, upper=1> vote[N]; //array
+}
+parameters {
+  vector[2] beta;
+}
+model {
+  vote ~ bernoulli_logit(beta[1] + beta[2]*income);
+}
+"
+#https://github.com/stan-dev/example-models/blob/master/ARM/Ch.5/nes_logit.stan
+model_ch5 = "
+data {
+  int<lower=0> N;
+  vector[N] income;
+  int<lower=0,upper=1> vote[N];
+}
+parameters {
+  vector[2] beta;
+}
+model {
+  vote ~ bernoulli_logit(beta[1] + beta[2] * income);
+}
+"
+
+model_beetles="
+data {
+  int<lower=0> N;         //number of data
+  int n[N];            //number of beetles
+  int<lower=0> r[N];   //killed
+  real x[N];            //concentration
+}
+parameters {
+  vector[2] beta;
+}
+model {
+  /*for (i in 1:N)
+    r[i] ~ binomial(n[i], inv_logit(beta[1] + beta[2]*x[i]));
+  */
+  r ~ binomial_logit(n, beta[1] + beta[2]*x);    
+}
+"
+
+model_beetles_vectorised="
+data {
+  int<lower=0> N;         //number of data
+  vector[N] n;            //number of beetles
+  int<lower=0>[N] r;   //killed
+  vector[N] x;            //concentration
+}
+parameters {
+  vector[2] beta;
+}
+model {
+  r ~ binomial_logit(n, beta[1] + beta[2]*x);    
+}
+"
+
+model_beetles_logit.stan = "
+data {
+    int<lower=0> N;
+    int<lower=0> n[N];
+    int<lower=0> r[N];
+    vector[N] x;
+}
+
+transformed data {
+    vector[N] centered_x;
+    real mean_x;
+    mean_x <- mean(x);
+    centered_x <- x - mean_x;
+}
+
+parameters {
+    real alpha_star;
+    real beta;
+}
+
+transformed parameters {
+    vector[N] m;
+    m <- alpha_star + beta * centered_x;
+}
+
+model {
+  alpha_star ~ normal(0.0, 1.0E4);  
+  beta ~ normal(0.0, 1.0E4);
+  r ~ binomial_logit(n, m);
+}
+
+generated quantities {
+  real alpha; 
+  real p[N];
+  real llike[N];
+  real rhat[N];
+  for (i in 1:N)  {
+    p[i] <- inv_logit(m[i]);
+    llike[i]  <- r[i]*log(p[i]) + (n[i]-r[i])*log(1-p[i]);  
+    rhat[i] <- p[i]*n[i];  // fitted values
+  }
+  alpha <- alpha_star - beta*mean_x;              
+} 
+
+"
+
+
 # bernoullie-gamma truncated [0, 1]
 # took so long
 # note that gamma in stan takes shape(alpha) and rate(beta)
